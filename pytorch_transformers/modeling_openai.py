@@ -514,12 +514,18 @@ class OpenAIGPTLMHeadModel(OpenAIGPTPreTrainedModel):
             shift_logits = lm_logits[..., :-1, :].contiguous()
             shift_labels = labels[..., 1:].contiguous()
             # Flatten the tokens
-            loss_fct = CrossEntropyLoss(ignore_index=-1)
+            # loss_fct = CrossEntropyLoss(ignore_index=-1)
+            # loss = loss_fct(shift_logits.view(-1, shift_logits.size(-1)),
+            #                shift_labels.view(-1))
+            # outputs = (loss,) + outputs
+        # return outputs  # (loss), lm_logits, (all hidden states), (all attentions)
+
+            # return loss for each word, rather than the whole sentence
+            loss_fct = CrossEntropyLoss(ignore_index=-1, reduction='none')
             loss = loss_fct(shift_logits.view(-1, shift_logits.size(-1)),
                             shift_labels.view(-1))
-            outputs = (loss,) + outputs
-
-        return outputs  # (loss), lm_logits, (all hidden states), (all attentions)
+            return loss.view(-1, 3)
+        return lm_logits
 
 
 @add_start_docstrings("""OpenAI GPT Model transformer with a language modeling and a multiple-choice classification
